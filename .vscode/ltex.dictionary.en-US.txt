@@ -1,0 +1,9 @@
+Underfitting
+Kwiatkowski-Phillips-Schmidt-Shin
+OHLCV
+non-stationarity
+OHLC
+VIX
+cyclicality
+stationarity
+detrending
