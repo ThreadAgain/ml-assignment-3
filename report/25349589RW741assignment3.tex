@@ -34,8 +34,94 @@ Stellenbosch, South Africa \\
 
 
 \section{Background}
-TODO: Discussion on Elman, Jordan and Multi-RNNs
 
+\textbf{Elman Recurrent Neural Network }
+
+The Elman recurrent neural network (Elman-RNN) is a simple RNN architecture consisting of an input layer, a hidden
+layer, a context layer, and an output layer. The context layer, with the same number of neurons as the hidden layer,
+stores a copy of the previous hidden state and feeds it back to the hidden layer, enabling the network to maintain
+short-term memory of past inputs. This feedback loop introduces temporal dynamics, distinguishing it from feedforward
+networks.
+
+Elman-RNN is suitable for time-series prediction because its recurrent structure captures sequential dependencies,
+allowing it to model patterns in data where current values depend on historical context, such as a simple sequence of
+XOR operations, stock prices or weather.
+
+TODO: Mathematically, the hidden state is formulated as 
+% \( h_j(t) = F\left(\sum_{i=1}^m w_{ij} x_i(t) + \sum_{l=1}^n w_{lj}'
+% h_l(t-1)\right) \), where \( F \) is the activation function (e.g., sigmoid), \( w_{ij} \) are input-to-hidden weights,
+% and \( w_{lj}' \) are context-to-hidden weights. The output is \( y(t) = F\left(\sum_{j=1}^n w_j h_j(t)\right) \), with
+% \( w_j \) as hidden-to-output weights.
+
+% $h_t = \tanh(x_t W_{ih}^T + b_{ih} + h_{t-1}W_{hh}^T + b_{hh})$
+
+\textbf{Jordan Recurrent Neural Network }
+
+The Jordan recurrent neural network (Jordan-RNN) features an input layer, hidden layer, context layer, and output layer. Unlike
+Elman-RNN, the context layer stores previous output values and feeds them back to the hidden layer, creating a feedback
+loop from outputs to influence future computations. The Jordan-RNN's context layer has the same amount of
+neurons as its output layer in contrast to the Elman-RNN having a context layer with the same size as its hidden layer.
+
+Jordan-RNN applies to time-series prediction by leveraging output feedback to handle temporal correlations, making it effective
+for forecasting tasks like price trends where past predictions inform future ones.
+
+TODO:The mathematical formulation for the hidden state is 
+% \( h_j(t) = F\left(\sum_{i=1}^m w_{ij} x_i(t) + \sum_{l=1}^n
+% w_{lj}' y(t-l)\right) \), with \( y(t-l) \) from prior outputs. The output state is \( y(t) = F\left(\sum_{j=1}^n w_j
+% h_j(t)\right) \).
+
+\textbf{Multi-Recurrent Neural Network }
+
+The multi-recurrent neural network (MRNN) integrates features of both Elman-RNN and Jordan-RNN. It includes input,
+hidden, context, and output layers. The context layer receives feedback from both previous hidden states and
+outputs and presented to the hidden layer at each time step. This hybrid architecture enhances memory by combining multiple
+recurrent paths.
+
+MRNN is apt for time-series prediction as its dual feedback mechanisms provide an alternative way to capture complex
+temporal dependencies in sequential data compared to the previous two single-loop variants.
+
+While specific equations vary, MRNN extends Elman-RNN and Jordan-RNN formulations by incorporating both hidden and output feedbacks
+in the hidden state computation, such as combining terms from \( h(t-1) \) and \( y(t-1) \) in the activation.
+
+\textbf{Backpropagation Training Process} 
+
+The training process relies on backpropagation through time (BPTT) to effectively manage the sequential nature of the
+data. This method works by unfolding the recurrent network across multiple time steps, essentially converting it into a
+layered feedforward network where the weights are shared among the time-unfolded layers, allowing the use of standard
+backpropagation techniques to calculate gradients \cite{quarkmlBackpropagationThrough}.
+
+The process starts with a forward pass through the network. For each time step $t$ in the sequence, the hidden state is
+calculated as \( h_t = \tanh(W_{xh} \cdot X_t + W_{hh} \cdot h_{t-1} + b_h) \), where \( X_t \) represents the input at
+that step, \( W_{xh} \) is the weight matrix from input to hidden, \( W_{hh} \) is the recurrent weight matrix from
+previous hidden to current hidden, and \( b_h \) is the hidden bias. Following this, the output at each time step is
+computed as \( y_t = \phi(W_{oh} \cdot h_t + b_o) \), with \( W_{oh} \) as the weight matrix from hidden to output, \(
+b_o \) as the output bias, tanh as the activation for the hidden layer, and \( \phi \) (such as sigmoid or softmax) for
+the output layer \cite{quarkmlBackpropagationThrough}.
+
+Next, the loss is evaluated, often using mean squared error for regression tasks like time-series prediction: \( L =
+\frac{1}{N} \sum_{t=1}^{N} (y - y_t)^2 \), where y is the target value and N is the number of time steps. The derivative
+of this loss with respect to the predicted output is \( \frac{\partial{L}}{\partial{y_t}} = \frac{2}{n}\sum_{t=t}^{n}(y
+- y_t) \) providing the starting point for error propagation.
+
+The backward pass then proceeds by applying the chain rule to propagate errors back through the unfolded network,
+accumulating gradients over all time steps. For the output weights, the gradient is \( \frac{\partial L}{\partial
+W_{oh}} = \sum_{i=0}^{t} \frac{\partial L}{\partial y_{t-i}} \cdot \frac{\partial y_{t-i}}{\partial W_{oh}} \), which
+sums contributions from each relevant time step. For the input-to-hidden weights, it is \( \frac{\partial L}{\partial
+W_{xh}} = \sum_{i=0}^{t} \left[ \left( \frac{\partial L}{\partial y_{t-i}} \cdot \frac{\partial y_{t-i}}{\partial
+h_{t-i}} \right) \cdot \left( \prod_{j=(t-i+1)}^{t} \frac{\partial h_j}{\partial h_{j-1}} \right) \cdot \frac{\partial
+h_{t-i}}{\partial W_{xh}} \right] \), accounting for how errors flow through the recurrent connections. Similarly, for
+the hidden-to-hidden weights: \( \frac{\partial L}{\partial W_{hh}} = \sum_{i=0}^{t} \left[ \left( \frac{\partial
+L}{\partial y_{t-i}} \cdot \frac{\partial y_{t-i}}{\partial h_{t-i}} \right) \cdot \left( \prod_{j=(t-i+1)}^{t}
+\frac{\partial h_j}{\partial h_{j-1}} \right) \cdot \frac{\partial h_{t-i}}{\partial W_{hh}} \right] \). 
+
+Once these gradients are computed, the weights are updated using gradient descent with a learning rate \( \alpha \).
+Care must be taken with long sequences to mitigate issues like vanishing or exploding gradients that can arise from
+repeated multiplications in the product terms \cite{quarkmlBackpropagationThrough}.
+
+In the context of specific architectures, BPTT in Elman RNNs emphasizes updating the hidden-to-context feedback to
+capture internal dynamics; in Jordan RNNs, it prioritizes the output-to-context loop for incorporating prior
+predictions; and in multi-RNNs, it handles both types of feedback simultaneously to support more robust temporal
+modeling in time-series applications.
 
 \section{Methodology}
 \subsection{Datasets}
@@ -43,27 +129,26 @@ TODO: ensure Data Preprocessing justifications
 
 \textbf{S\&P 500 ETF Daily OHLCV} dataset was obtained from Yahoo Finance. This dataset comprises 5,031 trading days of
 Open, High, Low, Close, and Volume data from 19 September 2005 to 19 September 2025. This dataset is particularly
-relevant for evaluating RNN architectures due to its inherent non-stationarity, volatility
-shifts, and complex non-linear dependencies, which provide a robust benchmark for comparing the ability of different
-models to learn temporal patterns and predict next-step log returns. Preprocessing was necessary to ensure data quality
-and model stability. The 85 instances identified as outliers (>3 standard deviations) were clamp-transformed to 3
-standard deviations from the mean. To address multicollinearity among the highly correlated OHLC features while
-retaining discriminatory power, the Open, High, and Low variables were dropped and replaced with two engineered
-features: the high-low range and log returns. The closing price, confirmed as non-stationary by Augmented Dickey-Fuller
-(ADF) and Kwiatkowski-Phillips-Schmidt-Shin (KPSS) tests, was stabilized by conversion to log returns. Finally, all
-features were scaled to a [0, 1] range independently for the training and testing sets to prevent data leakage.
+relevant for evaluating RNN architectures due to its inherent non-stationarity, volatility shifts, and complex
+non-linear dependencies, which provide a robust benchmark for comparing the ability of different models to learn
+temporal patterns and predict next-step log returns. Preprocessing was necessary to ensure data quality and model
+stability. The 85 instances identified as outliers ($\sigma >$ 3) were clamp-transformed to 3 standard deviations from
+the mean. To address multicollinearity among the highly correlated OHLC features while retaining discriminatory power,
+the Open, High, and Low variables were dropped and replaced with two engineered features: the high-low range and log
+returns. The closing price, confirmed as non-stationary by Augmented Dickey-Fuller (ADF) and
+Kwiatkowski-Phillips-Schmidt-Shin (KPSS) tests, was stabilized by conversion to log returns. Finally, all features were
+scaled to a [0, 1] range independently for the training and testing sets to prevent data leakage.
 
-\textbf{VIX Daily OHLC} dataset, sourced from Yahoo Finance,
-provides 5,031 observations of daily Open, High, Low, and Close data for the period spanning 19 September 2005 to 19
-September 2025. This time series is well-suited for testing RNNs because its structural properties. These structural
-properties include sharp fluctuations, sudden spikes, and shifting sequential dependencies that create challenging
-non-stationary signals. These characteristics differ significantly from the other datasets which make it an ideal
-candidate for diversifying training data. Data preparation involved several steps. First, 73
-outliers exceeding 3 standard deviations were clamped to 3 standard deviations. The non-stationarity of the closing
-price, verified with ADF and KPSS tests, was resolved by transforming the series into log returns. Similar to the S\&P
-500 data, the redundant and highly correlated Open, High, and Low features were removed and replaced with the engineered
-high-low range and log return features. The resulting feature set was then scaled to a [0, 1] range separately for the
-training and testing partitions.
+\textbf{VIX Daily OHLC} dataset, sourced from Yahoo Finance, provides 5,031 observations of daily Open, High, Low, and
+Close data for the period spanning 19 September 2005 to 19 September 2025. This time series is well-suited for testing
+RNNs because its structural properties. These structural properties include sharp fluctuations, sudden spikes, and
+shifting sequential dependencies that create challenging non-stationary signals. These characteristics differ
+significantly from the other datasets which make it an ideal candidate for diversifying training data. Data preparation
+involved several steps. First, 73 outliers exceeding 3 standard deviations were clamped. The non-stationarity of the
+closing price, verified with ADF and KPSS tests, was resolved by transforming the series into log returns. Similar to
+the S\&P 500 data. The redundant and highly correlated Open, High, and Low features were removed and replaced with the
+engineered high-low range and log return features. The resulting feature set was then scaled to a [0, 1] range
+separately for the training and testing partitions.
 
 The \textbf{ElectricityLoadDiagrams20112014} dataset contains high-frequency electricity consumption readings in
 kilowatts for 370 clients, recorded every 15 minutes from January 2011 to the end of 2014. For this assignment, a single
@@ -115,7 +200,9 @@ TODO: describe the loss function used
 \section{Results}
 
 \section{Conclusion}
-
+\cite{yahoosnp500}
+\cite{yahoovix}
+\cite{elec_cons}
 
 \bibliographystyle{IEEEtran}
 \nocite{myrepo}
