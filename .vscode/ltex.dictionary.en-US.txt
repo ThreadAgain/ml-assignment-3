@@ -7,3 +7,11 @@ VIX
 cyclicality
 stationarity
 detrending
+Elman
+Elman-RNN
+backpropagation
+standardised
+underfitting
+scikit-learn
+StandardScaler
+scaler

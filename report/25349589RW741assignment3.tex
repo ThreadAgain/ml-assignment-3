@@ -124,7 +124,7 @@ predictions; and in multi-RNNs, it handles both types of feedback simultaneously
 modeling in time-series applications.
 
 \section{Methodology}
-\subsection{Datasets}
+\subsection{Datasets description}
 TODO: ensure Data Preprocessing justifications
 
 \textbf{S\&P 500 ETF Daily OHLCV} dataset was obtained from Yahoo Finance. This dataset comprises 5,031 trading days of
@@ -136,8 +136,8 @@ stability. The 85 instances identified as outliers ($\sigma >$ 3) were clamp-tra
 the mean. To address multicollinearity among the highly correlated OHLC features while retaining discriminatory power,
 the Open, High, and Low variables were dropped and replaced with two engineered features: the high-low range and log
 returns. The closing price, confirmed as non-stationary by Augmented Dickey-Fuller (ADF) and
-Kwiatkowski-Phillips-Schmidt-Shin (KPSS) tests, was stabilized by conversion to log returns. Finally, all features were
-scaled to a [0, 1] range independently for the training and testing sets to prevent data leakage.
+Kwiatkowski-Phillips-Schmidt-Shin (KPSS) tests, was stabilized by conversion to log returns. Feature scaling will be
+discussed in subsection C along with the time-series cross validation.
 
 \textbf{VIX Daily OHLC} dataset, sourced from Yahoo Finance, provides 5,031 observations of daily Open, High, Low, and
 Close data for the period spanning 19 September 2005 to 19 September 2025. This time series is well-suited for testing
@@ -147,8 +147,7 @@ significantly from the other datasets which make it an ideal candidate for diver
 involved several steps. First, 73 outliers exceeding 3 standard deviations were clamped. The non-stationarity of the
 closing price, verified with ADF and KPSS tests, was resolved by transforming the series into log returns. Similar to
 the S\&P 500 data. The redundant and highly correlated Open, High, and Low features were removed and replaced with the
-engineered high-low range and log return features. The resulting feature set was then scaled to a [0, 1] range
-separately for the training and testing partitions.
+engineered high-low range and log return features.
 
 The \textbf{ElectricityLoadDiagrams20112014} dataset contains high-frequency electricity consumption readings in
 kilowatts for 370 clients, recorded every 15 minutes from January 2011 to the end of 2014. For this assignment, a single
@@ -157,8 +156,7 @@ time-series forecasting scenario. This provides a distinct high-granularity, cyc
 predictive performance of the RNN models. The data required minimal cleaning as it contained no missing values. However,
 power consumption values exceeding 3 standard deviations from the mean were clamp-transformed to handle outliers. Both
 ADF and KPSS tests confirmed that the series was non-stationary. To address this, a 24-hour seasonal differencing was
-applied, accounting for the inherent daily cyclicality of energy usage. During model training and evaluation, the data
-was scaled to a [0, 1] range independently for the training and testing sets.
+applied, accounting for the inherent daily cyclicality of energy usage.
 
 The \textbf{Synthetic Autoregressive Stationary (AR(1))} dataset was generated using Python code with the NumPy library,
 simulating a univariate time series from an AR(1) process defined by the equation $x_t = 0.5 x_{t-1} + \epsilon_t$,
@@ -170,8 +168,6 @@ controlled environment to evaluate the models' ability to capture simple recurre
 factors present in real-world data, thereby serving as a baseline for comparison with non-stationary datasets. The
 synthetic nature ensured no missing values or structural anomalies. Stationary was confirmed both by design
 (autoregressive coefficient $|\phi| = 0.5 < 1$) and through ADF and KPSS tests, requiring no differencing or detrending.
-Finally, the series was scaled to a [0, 1] range independently for the training and testing sets to facilitate stable
-RNN training and prevent data leakage.
 
 The \textbf{TimeSeries Weather Dataset}, sourced from Kaggle, contains hourly historical weather data for two locations.
 The location having more records (389,496 observations spanning January 1, 1980, to June 6, 2024) was selected. This
@@ -183,19 +179,57 @@ mentioned datasets. The data exhibited no missing values or major irregularities
 deviations were clamp-transformed. Highly correlated features with absolute correlation greater than 0.75 were dropped
 to reduce multicollinearity while preserving predictive power. The target feature is defined as the next hour's
 differenced temperature. Non-stationarity, confirmed by ADF and KPSS tests, was addressed through 24-hour seasonal
-differencing to account for daily periodicity. All features were scaled to a [0, 1] range independently for the training
-and testing sets to ensure model stability and prevent data leakage.
+differencing to account for daily periodicity.
 
 \subsection{Recurrent Neural Networks Implemented}
-TODO: describe the optimisation algorithm used
-TODO: describe the loss function used
+% TODO: mention the np, and PyTorch seed was set to a random number
+For each dataset the models were trained using the Adam optimization algorithm, a method well-suited for training
+shallow/simple neural networks. The key hyperparameters for the optimizer, namely the learning rate and weight decay
+determined through the hyperparameter tuning process.
+
+The Mean Squared Error (MSE) was employed as the loss function to guide the training process. MSE is a standard choice
+for regression tasks, as it measures the average squared difference between the predicted values ($\hat{y}$) and the actual
+values ($y$). It is defined by the formula:
+
+$$L_{MSE} = \frac{1}{N} \sum_{i=1}^{N} (y_i - \hat{y}_i)^2$$ 
+
+This function is differentiable and penalizes larger prediction errors more heavily, making it effective for model optimization.
+
 \subsection{Cross Validation Implementation}
+To tune hyperparameters and assess model performance, a growing-window cross-validation procedure was implemented as
+described in \cite{CrossValidationTimeseries}. Standard $k$-fold cross-validation is inappropriate for time series data
+because it shuffles observations, thereby destroying their temporal order \cite{CrossValidationTimeseries}.
+
+The growing-window approach respects this temporal structure. The process begins by training the model on an initial,
+chronological segment of the data and validating it on the immediately following block of data. In each subsequent fold,
+the training set is expanded to include the data from the previous validation block, while the next sequential block is
+used for validation. This method simulates a realistic forecasting scenario where a model is periodically retrained as
+new data becomes available, ensuring that the model is always validated on "future" data relative to its training set.
+For each fold, the training data was standardized using scikit-learn's \texttt{StandardScaler()}, which removes the mean
+and scales features to unit variance. The corresponding validation fold was transformed using the scaler fitted on its
+respective training data. This procedure ensures that the scaling parameters are derived exclusively from the training
+set, thereby preventing any information leakage from the validation set. As a result, the validation data is transformed
+using the statistics of the training data, maintaining the integrity of the evaluation and reflecting a realistic
+forecasting scenario.
 
 \subsection{Overfitting/Underfitting Prevention}
+A multi-faceted strategy was implemented to ensure the models achieved a balance between underfitting and overfitting.
 
+To prevent underfitting, a \textbf{grid search} was conducted over a range of hyperparameters, including the number of hidden
+units, sequence length, weight decay, early stopping and learning rate. This systematic exploration ensures that the
+final model has sufficient complexity and capacity to capture the underlying patterns present in the data.
+
+To prevent overfitting, two distinct regularization techniques were applied during training:
+
+\textbf{Weight Decay (L2 Regularization):} This was incorporated directly into the Adam optimizer. By adding a penalty term to
+the loss function proportional to the squared magnitude of the model weights, this technique discourages the learning of
+overly complex models that might fit the noise in the training data.
+
+\textbf{Early Stopping:} The model's performance on the validation set of each fold was measured at the end of every epoch. If
+the validation loss did not show improvement for a predefined number of epochs (the patience parameter), the training
+process was halted. This prevents the model from continuing to train once starts to overfit the training data.
 
 \section{Empirical Procedure}
-
 
 \section{Results}
 
