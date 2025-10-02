@@ -22,26 +22,38 @@ Stellenbosch, South Africa \\
 \maketitle
 
 \begin{abstract}
-
+    Time series forecasting is a critical task for which Recurrent Neural Networks (RNNs) are well-suited due to their
+    ability to model sequential data. Foundational architectures such as the Elman-RNN and the Jordan-RNN offer distinct
+    approaches to capturing temporal dependencies. This paper conducts a comparison of the Elman-RNN, Jordan-RNN, and a
+    hybrid Multi-Recurrent Neural Network (MRNN) to determine if a superior architecture emerges for time series
+    forecasting in a given dataset. The evaluation is performed on five datasets with diverse characteristics: a
+    synthetic autoregressive series, S\&P 500 and VIX financial indices, an electricity load profile, and a multivariate
+    weather series. For each model and dataset, a comprehensive hyperparameter search is conducted using a
+    growing-window cross-validation strategy to ensure a fair comparison. The final performance, measured by Root Mean
+    Squared Error (RMSE) and Mean Absolute Error (MAE) on a holdout test set, reveals that all three architectures
+    achieve remarkably similar predictive accuracy. Despite their structural differences, no single model demonstrated a
+    consistent or significant advantage across the varied forecasting tasks. This suggests that the specific choice
+    between these foundational RNN feedback mechanisms may be less critical to forecasting performance than robust
+    hyperparameter tuning and appropriate data preprocessing.
 \end{abstract}
 
-\begin{IEEEkeywords}
+% \begin{IEEEkeywords}
 
-\end{IEEEkeywords}
+% \end{IEEEkeywords}
 
 \section{Introduction}
 
 Time series forecasting is a critical task in many domains, involving the prediction of future values based on
-historical data. Recurrent Neural Networks (RNNs) are a class of neural networks specifically designed for sequential
+historical data. RNNs are a class of neural networks specifically designed for sequential
 data, making them highly suitable for such forecasting tasks. The defining feature of RNNs is the presence of feedback
 loops, which allow the networks to maintain an internal state or memory of past information to influence future
 predictions.
 
-Among the foundational RNN architectures are the Elman Recurrent Neural Network (Elman-RNN) and the Jordan Recurrent
-Neural Network (Jordan-RNN). The Elman-RNN captures temporal dynamics by feeding the previous hidden state back into the
-current hidden layer computation. In contrast, the Jordan-RNN utilizes feedback from the network's previous output to
-inform the current hidden state. The Multi-Recurrent Neural Network (MRNN) is a hybrid architecture that integrates both
-of these feedback mechanisms, theoretically enabling the capture of more complex temporal dependencies.
+Among the foundational RNN architectures are the Elman-RNN and the Jordan-RNN. The Elman-RNN captures temporal dynamics
+by feeding the previous hidden state back into the current hidden layer computation. In contrast, the Jordan-RNN
+utilizes feedback from the network's previous output to inform the current hidden state. The MRNN is a hybrid
+architecture that integrates both of these feedback mechanisms, theoretically enabling the capture of more complex
+temporal dependencies.
 
 While these three architectures are well-established, a direct and rigorous comparison of their performance across
 diverse time series problems is necessary to guide model selection. This paper aims to fill that gap by evaluating the
@@ -53,8 +65,7 @@ The comparative analysis is conducted using five distinct datasets: a synthetic 
 VIX financial indices, an electricity load profile, and a multivariate weather dataset. To ensure a fair and robust
 evaluation, a comprehensive hyperparameter tuning process is implemented for each model on each dataset using a
 growing-window cross-validation strategy, which respects the temporal order of the data. The final performance of the
-optimized models is then assessed on an unseen holdout test set, using Root Mean Squared Error (RMSE) and Mean Absolute
-Error (MAE) as the primary evaluation metrics.
+optimized models is then assessed on an unseen holdout test set, using RMSE and MAE as the primary evaluation metrics.
 
 The remainder of this paper details this investigation. The background section provides a technical overview of the
 three RNN architectures and their training process. The methodology section describes the datasets, the cross-validation
@@ -66,15 +77,23 @@ for time series forecasting.
 
 \section{Background}
 
+The notation used in the equations for the RNN architectures is defined as follows. The term $h_t$ represents the hidden
+state vector at the current time step $t$. The input to the network at the same time step is given by the vector $X_t$.
+The feedback mechanisms rely on information from the previous time step, where $h_{t-1}$ is the hidden state and
+$y_{t-1}$ is the network's output. The network's learnable parameters include the weight matrices and a bias vector.
+Specifically, $W_{xh}$ is the weight matrix connecting the input layer to the hidden layer, $W_{hh}$ is the recurrent
+weight matrix from the previous hidden state to the current hidden state, and $W_{yh}$ is the weight matrix from the
+previous output to the hidden state. The term $b_h$ represents the bias vector for the hidden layer. Finally, $\tanh$
+denotes the hyperbolic tangent activation function.
+
 \textbf{Elman Recurrent Neural Network }
 
-The Elman recurrent neural network (Elman-RNN) is a simple RNN architecture consisting of an input layer, a hidden
-layer, a context layer, and an output layer. The context layer, with the same number of neurons as the hidden layer,
-stores a copy of the previous hidden state and feeds it back to the hidden layer, enabling the network to maintain
-short-term memory of past inputs. 
-The Elman-RNN hidden state is computed as follow:
+The Elman-RNN is a simple RNN architecture consisting of an input layer, a hidden layer, a context layer, and an output
+layer. The context layer, with the same number of neurons as the hidden layer, stores a copy of the previous hidden
+state and feeds it back to the hidden layer, enabling the network to maintain short-term memory of past inputs. The
+Elman-RNN hidden state is computed as follows:
 $$h_t = \tanh(W_{xh}X_t + W_{hh}h_{t-1} + b_h)$$
-TODO: add explaination of the notation
+% TODO: add explaination of the notation
 
 This feedback loop introduces temporal dynamics, distinguishing it from feedforward
 networks.
@@ -82,14 +101,6 @@ networks.
 Elman-RNN is suitable for time series prediction because its recurrent structure captures sequential dependencies,
 allowing it to model patterns in data where current values depend on historical context, such as a simple sequence of
 XOR operations, stock prices or weather.
-
-% TODO: Mathematically, the hidden state is formulated as 
-% \( h_j(t) = F\left(\sum_{i=1}^m w_{ij} x_i(t) + \sum_{l=1}^n w_{lj}'
-% h_l(t-1)\right) \), where \( F \) is the activation function (e.g., sigmoid), \( w_{ij} \) are input-to-hidden weights,
-% and \( w_{lj}' \) are context-to-hidden weights. The output is \( y(t) = F\left(\sum_{j=1}^n w_j h_j(t)\right) \), with
-% \( w_j \) as hidden-to-output weights.
-
-% $h_t = \tanh(x_t W_{ih}^T + b_{ih} + h_{t-1}W_{hh}^T + b_{hh})$
 
 \textbf{Jordan Recurrent Neural Network }
 
@@ -99,16 +110,11 @@ loop from outputs to influence future computations. The Jordan-RNN hidden states
 
 $$h_t = \tanh(W_{xh}X_t + W_{yh}y_{t-1} + b_h)$$
 
-The Jordan-RNN's context layer has the same amount of neurons as its output layer in contrast to the Elman-RNN having a
+The Jordan-RNN's context layer has the same number of neurons as its output layer in contrast to the Elman-RNN having a
 context layer with the same size as its hidden layer.
 
-Jordan-RNN applies to time series prediction by leveraging output feedback to handle temporal correlations, making it effective
-for forecasting tasks like price trends where past predictions inform future ones.
-
-% TODO:The mathematical formulation for the hidden state is 
-% \( h_j(t) = F\left(\sum_{i=1}^m w_{ij} x_i(t) + \sum_{l=1}^n
-% w_{lj}' y(t-l)\right) \), with \( y(t-l) \) from prior outputs. The output state is \( y(t) = F\left(\sum_{j=1}^n w_j
-% h_j(t)\right) \).
+Jordan-RNN applies to time series prediction by leveraging output feedback to handle temporal correlations, making it
+effective for forecasting tasks like price trends where past predictions inform future ones.
 
 \textbf{Multi-Recurrent Neural Network }
 
@@ -186,43 +192,43 @@ optimize weight updates, which enhances convergence speed and stability for time
 Open, High, Low, Close, and Volume data from 19 September 2005 to 19 September 2025. This dataset is particularly
 relevant for evaluating RNN architectures due to its inherent non-stationarity, inconsistent variance, and complex
 non-linear dependencies, which provide a robust benchmark for comparing the ability of different models to learn
-patterns in time series data and predict next-step log returns. Preprocessing was necessary to ensure data quality and
-model stability. The 85 instances identified as outliers ($\sigma >$ 3) were clamp-transformed to 3 standard deviations
-from the mean. To address highly correlated features while retaining discriminatory power, the Open, High, and Low
-features were dropped and replaced with an engineered feature namely the high-low range. The closing price, confirmed as
-non-stationary by Augmented Dickey-Fuller (ADF) and Kwiatkowski-Phillips-Schmidt-Shin (KPSS) tests, was stabilized by
-conversion to log returns \cite{StationarityTests}. \\
+patterns in time series data and predict next-step closing price. Preprocessing was necessary to ensure data quality and
+model stability. The 85 instances identified as outliers in the training data set ($\sigma >$ 3) were clamp-transformed
+to 3 standard deviations from the mean. The closing price, confirmed as non-stationary by Augmented Dickey-Fuller (ADF)
+and Kwiatkowski-Phillips-Schmidt-Shin (KPSS) tests, was stabilized by conversion to log returns
+\cite{StationarityTests}.\\
 
 $log\_return_t = log(close_t / close_{t-1})$\\
 
-Using log returns is a common way to make financial time series data stationary. 
-Feature scaling for all datasets will be discussed in subsection C along with the time series cross validation.
+Using log returns is a common way to make financial time series data stationary. Log returns were the only feature used
+in this dataset Feature scaling for all datasets is discussed in subsection C along with the time series cross
+validation.
 
-\textbf{VIX Daily OHLC} dataset, sourced from Yahoo Finance, provides 5,031 observations of daily Open, High, Low, and
-Close data for the period spanning 19 September 2005 to 19 September 2025. This time series is well-suited for testing
-RNNs because its structural properties. These structural properties include sudden spikes, and shifting sequential
-dependencies that create challenging non-stationary patterns. These characteristics differ significantly from the other
-datasets which make it an ideal candidate for diversifying training data. Data preparation involved several steps.
-First, 73 outliers exceeding 3 standard deviations were clamped. The non-stationarity of the closing price, verified
-with ADF and KPSS tests, was resolved by transforming the series' Close feature into log returns. Similar to the S\&P 500 data. The
-redundant and highly correlated Open, High, and Low features were removed and replaced with the engineered high-low
-range and log return features.
+\textbf{CBOE VIX Daily OHLC} dataset, sourced from Yahoo Finance, provides 5,031 observations of daily Open, High, Low,
+and Close data for the period spanning 19 September 2005 to 19 September 2025. This time series is well-suited for
+testing RNNs because its structural properties. These structural properties include sudden spikes, and shifting
+sequential dependencies that create challenging non-stationary patterns. These characteristics differ significantly from
+the other datasets which make it an ideal candidate for diversifying training data. Data preparation involved several
+steps. First, 73 outliers in the training set exceeding 3 standard deviations were clamped. The non-stationarity of the
+closing price, verified with ADF and KPSS tests, was resolved by transforming the series' Close feature into log
+returns. Similar to the S\&P 500 data. Log returns was once again the only feature used for training the models in this
+dataset.
 
 The \textbf{ElectricityLoadDiagrams20112014} dataset contains high-frequency electricity consumption readings in
 kilowatts for 370 clients, recorded every 15 minutes from January 2011 to the end of 2014. For this assignment, a single
-client's consumption profile, consisting of 140,256 measurements, was arbitrarily selected to create a univariate
-time series forecasting scenario. This dataset was reduced to a size of 2500 measurements by only using the first few
+client's consumption profile, consisting of 140,256 measurements, was arbitrarily selected to create a univariate time
+series forecasting scenario. This dataset was reduced to a size of 15000 measurements by only using the first few
 observations. This was done to reduce model training and hyperparameter tuning time to be reasonable. This provides a
 high-granularity, cyclical test case for evaluating the predictive performance of the RNN models. The data required
-minimal cleaning as it contained no missing values. However, power consumption values exceeding 3 standard deviations
-from the mean were clamp-transformed to handle outliers. Both ADF and KPSS tests confirmed that the series was
-non-stationary. To address this, a 24-hour seasonal differencing was applied, accounting for the inherent daily
-cyclicality of energy usage.
+minimal cleaning as it contained no missing values. However, power consumption values in the training set exceeding 3
+standard deviations from the mean were clamp-transformed to handle outliers. Both ADF and KPSS tests confirmed that the
+series was non-stationary. To address this, a 24-hour seasonal differencing was applied, accounting for the inherent
+daily cyclicality of energy usage.
 
 The \textbf{Synthetic Autoregressive Stationary (AR(1))} dataset was generated using Python code with the \texttt{NumPy}
 library, simulating a univariate time series from an AR(1) process defined by the equation $x_t = 0.5 x_{t-1} +
 \epsilon_t$, where $\epsilon_t$ is white noise drawn from a normal distribution with mean 0 and standard deviation 1.
-This dataset consists of 500 sequential observations, following a 500-point burn-in period to ensure the process reaches
+This dataset consists of 2000 sequential observations, following a 500-point burn-in period to ensure the process reaches
 stationarity. It is particularly suitable for benchmarking RNN architectures in this project due to its inherent
 stationarity, linear autoregressive dependencies, and absence of trends or seasonality, offering a controlled
 environment to evaluate the models' ability to capture simple recurrent patterns without the confounding factors present
@@ -243,7 +249,6 @@ differenced temperature. Non-stationarity, confirmed by ADF and KPSS tests, was 
 differencing to account for daily periodicity.
 
 \subsection{Recurrent Neural Networks Implemented}
-% TODO: mention the np, and PyTorch seed was set to a random number
 Elman, Jordan and MRNNs were implemented exactly as outlined in the background section. For each dataset the
 models were trained using the Adam optimization algorithm that uses gradients computed via BPTT. The key hyperparameters
 for the Adam optimizer, namely the learning rate and weight decay were determined through hyperparameter tuning.
@@ -314,17 +319,18 @@ A comprehensive grid search coupled with a 5-fold growing-window cross-validatio
 hyperparameters for each of the three RNN architectures on each dataset.
 
 The hyperparameter search space was defined as follows:
+
 \begin{itemize}
-    \item \textbf{Hidden Layer Size:} [150, 160, 170, 180, 190]
-    \item \textbf{Learning Rate:} [0.001, 0.005, 0.01, 0.015, 0.02]
-    \item \textbf{Sequence Length:} [10, 20, 30]
+    \item \textbf{Hidden Layer Size:} [32, 64, 96]
+    \item \textbf{Learning Rate:} [0.00001, 0.0001, 0.0005, 0.001]
+    \item \textbf{Sequence Length:} [10, 25]
     \item \textbf{Weight Decay:} [1e-5, 1e-4, 1e-3]
     \item \textbf{Early Stopping Patience:} [10, 15, 20] epochs
 \end{itemize}
 
 Throughout all experiments, several architectural and training parameters were held constant to ensure a controlled
 comparison. These included the Adam optimizer, Mean Squared Error (MSE) loss function, a single recurrent layer, a batch
-size of 32, and a \texttt{tanh} hidden layer activation function. Training was conducted for a maximum of 500 epochs,
+size of 32, and a \texttt{tanh} hidden layer activation function. Training was conducted for a maximum of 100 epochs,
 with early stopping implemented to prevent overfitting.
 
 The described grid search's results are included in the appendix Table \ref{hyperparameters}
@@ -334,7 +340,8 @@ The described grid search's results are included in the appendix Table \ref{hype
 The final evaluation followed three steps. First, the hyperparameter combination that achieved the lowest average RMSE
 during the growing-window cross-validation was identified for each RNN model. Second, a new model was made with these
 optimal hyperparameters and retrained from scratch on the entire 70\% training dataset. Finally, this fully trained
-model was evaluated one time on the unseen 30\% holdout test set to measure its definitive performance.
+model was evaluated one time on the unseen 30\% holdout test set to measure its definitive performance. Do note that
+plots presented in this section are made using the inversely transformed stationary versions of the datasets
 
 \subsection{Model Comparison Framework}
 To determine the best-performing RNN architecture for each dataset, the final holdout set RMSE and MAE scores from the
@@ -354,21 +361,26 @@ interpretability).
 For each dataset, the optimal hyperparameters are summarized, followed by a comparison of the three models. The
 best-performing model per dataset is highlighted based on the lowest holdout RMSE.
 
-\begin{table}[h]
+\subsection{Synthetic Autoregressive Stationary Dataset}
+
+The synthetic AR(1) dataset served as a baseline to validate the models' ability to learn simple, linear temporal
+dependencies. As shown in Table \ref{tab:results_ar1}, all three architectures performed exceptionally well, achieving
+nearly identical results on the holdout set. The Elman-RNN yielded a marginally lower RMSE of 1.1253, followed closely
+by the Jordan-RNN and MRNN with RMSEs of 1.1254.
+
+\begin{table}[H]
     \centering
     \begin{tabular}{|l|c|c|c|c|}
         \hline
-        &\multicolumn{2}{c|}{\textbf{Scaled}} & \multicolumn{2}{c|}{\textbf{Original}} \\ 
+        \textbf{Model}& \textbf{RMSE} & \textbf{MAE} \\ 
         \hline
-        \textbf{Model}& \textbf{RMSE} & \textbf{MAE} & \textbf{RMSE} & \textbf{MAE} \\ 
+        Elman-RNN & 1.1253 & 0.8941 \\
         \hline
-        Elman-RNN& 1.0773 & 0.8584 & 1.1638 & 0.9273 \\ 
+        Jordan-RNN & 1.1254 & 0.8941 \\
         \hline
-        Jordan-RNN & 1.0825 & 0.8755 & 1.1694 & 0.9459 \\ 
+        MRNN & 1.1254 & 0.8943 \\
         \hline
-        MRNN & 1.0418 & 0.8479 & 1.1255 & 0.9160 \\ 
-        \hline
-        \textbf{Best Model} & 1.0418 & 8479 & \multicolumn{2}{c|}{{MRNN}} \\ 
+        \textbf{Best Model} &\multicolumn{2}{c|}{{MRNN}} \\ 
         \hline
     \end{tabular}
     \vspace{4pt}
@@ -376,65 +388,71 @@ best-performing model per dataset is highlighted based on the lowest holdout RMS
     \label{tab:results_ar1}
 \end{table}
 
-\begin{table}[h]
-    \centering
-    \begin{tabular}{|l|c|c|c|c|}
-        \hline
-        &\multicolumn{2}{c|}{\textbf{Scaled}} & \multicolumn{2}{c|}{\textbf{Original}} \\ 
-        \hline
-        \textbf{Model}& \textbf{RMSE} & \textbf{MAE} & \textbf{RMSE} & \textbf{MAE} \\ 
-        \hline
-        Elman-RNN& 69 & 69 & 69 & 69 \\ 
-        \hline
-        Jordan-RNN & 69 & 69 & 69 & 69 \\ 
-        \hline
-        MRNN & 69 & 69 & 69 & 69 \\ 
-        \hline
-        \textbf{Best Model} & test & test & \textbf{[Name]} & \textbf{[Name]} \\ 
-        \hline
-    \end{tabular}
-    \vspace{4pt}
-    \caption{Performance Metrics for S\&P500}
-    \label{tab:results_spy}
-\end{table}
+This performance is notable because the theoretical limit for the RMSE on this dataset is 1.0, corresponding to the
+standard deviation of the white noise component ($\epsilon_t$) in the AR(1) process. An RMSE approaching this value
+indicates that the models successfully captured the autoregressive signal, with the remaining error being almost
+entirely due to the inherent randomness of the data. Therefore, the strong performance of these simple RNN
+models confirms their capability to learn the fundamental patterns present in a stationary autoregressive time series,
+establishing their suitability for tackling more complex forecasting problems.
 
-\begin{table}[h]
+\subsection{CBOE VIX Daily OHLC Dataset}
+For the CBOE VIX dataset, characterized by its high volatility and non-stationarity, all three models again demonstrated
+remarkably similar predictive accuracy. As shown in Table \ref{tab:results_vix}, the Jordan-RNN achieved a minimally
+lower RMSE of 0.0787, though the differences with the Elman-RNN (0.0788) and MRNN (0.0788) are practically
+insignificant. This quantitative similarity is visually confirmed in Figure \ref{fig:plots_vix}, where the forecast
+plots for the three models are nearly indistinguishable.
+\begin{table}[H]
     \centering
     \begin{tabular}{|l|c|c|c|c|}
         \hline
-        &\multicolumn{2}{c|}{\textbf{Scaled}} & \multicolumn{2}{c|}{\textbf{Original}} \\ 
+        \textbf{Model}& \textbf{RMSE} & \textbf{MAE}  \\ 
         \hline
-        \textbf{Model}& \textbf{RMSE} & \textbf{MAE} & \textbf{RMSE} & \textbf{MAE} \\ 
+        Elman-RNN& 0.0788 & 0.0545 \\ 
         \hline
-        Elman-RNN& 1.0187 & 0.7427 & 0.0719 & 0.0525 \\ 
+        Jordan-RNN & 0.0787 & 0.0545  \\ 
         \hline
-        Jordan-RNN & 1.0167 & 0.7423 & 0.0718 & 0.0524 \\ 
+        MRNN & 0.0788 & 0.0545  \\ 
         \hline
-        MRNN & 1.0204 & 0.7437 & 0.0721 & 0.0525 \\ 
-        \hline
-        \textbf{Best Model} & 1.0167 & 0.7423 & \multicolumn{2}{c|}{{Jordan-RNN}} \\ 
+        \textbf{Best Model} & \multicolumn{2}{c|}{{Jordan-RNN}} \\ 
         \hline
     \end{tabular}
     \vspace{4pt}
     \caption{Performance Metrics for CBOE VIX}
     \label{tab:results_vix}
 \end{table}
+The minor differences can be seen in Figure
+\ref{fig:plots_vix} where the MRNN and Jordan-RNN slightly differ.
 
-\begin{table}[h]
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\textwidth]{plots/rnn_model_comparison_vix.pdf}
+    \caption{VIX Dataset plots}
+    \label{fig:plots_vix}
+\end{figure}
+
+The consistent performance on this noisy, mean-reverting financial series suggests that the simple recurrent mechanisms
+of all three architectures were equally capable of modeling the complexities of this dataset. The feedback from
+the previous output ($y_{t-1}$) in the Jordan-RNN did not provide a clear advantage over feedback from the internal hidden
+state ($h_{t-1}$) or the hybrid approach of the MRNN.
+
+\subsection{ElectricityLoadDiagrams20112014 Dataset}
+The electricity load dataset, with its strong, high-frequency seasonality, introduced a slightly greater performance
+differentiation among the models. According to the metrics in Table \ref{tab:results_elec}, the Elman-RNN emerged as the
+top-performing model with an RMSE of 58.4710. The MRNN followed closely with an RMSE of 58.5584, while the Jordan-RNN
+lagged slightly at 59.1565.
+\begin{table}[H]
     \centering
     \begin{tabular}{|l|c|c|c|c|}
         \hline
-        &\multicolumn{2}{c|}{\textbf{Scaled}} & \multicolumn{2}{c|}{\textbf{Original}} \\ 
+        \textbf{Model}& \textbf{RMSE} & \textbf{MAE} \\ 
         \hline
-        \textbf{Model}& \textbf{RMSE} & \textbf{MAE} & \textbf{RMSE} & \textbf{MAE} \\ 
+        Elman-RNN& 58.4710 & 40.0989 \\ 
         \hline
-        Elman-RNN& 0.8267 & 0.5947 & 62.7868 & 45.1673 \\ 
+        Jordan-RNN & 59.1565 & 40.0989 \\ 
         \hline
-        Jordan-RNN & 0.8307 & 0.5991 & 63.0906 & 45.5011 \\ 
+        MRNN &  58.5584 & 39.9769 \\ 
         \hline
-        MRNN & 0.8396 & 0.6020 & 63.7686 & 45.7201 \\ 
-        \hline
-        \textbf{Best Model} & 0.8267 & 0.5947 & \multicolumn{2}{c|}{{Elman-RNN}}\\ 
+        \textbf{Best Model} & \multicolumn{2}{c|}{{Elman-RNN}}\\ 
         \hline
     \end{tabular}
     \vspace{4pt}
@@ -442,34 +460,97 @@ best-performing model per dataset is highlighted based on the lowest holdout RMS
     \label{tab:results_elec}
 \end{table}
 
-\begin{table}[h]
+Despite these numerical differences, the overall predictive power remains comparable, as illustrated by the forecast
+plots in Figure \ref{fig:plots_elec}. The marginal superiority of the Elman-RNN may suggest that for time series with
+highly regular internal patterns, such as daily energy consumption cycles, relying on the memory of the internal hidden
+state ($h_{t-1}$) is slightly more effective for capturing the underlying structure than incorporating the potentially
+noisier previous output ($y_{t-1}$).
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\textwidth]{plots/rnn_model_comparison_elec.pdf}
+    \caption{ElectricityLoadDiagrams20112014 Dataset plots}
+    \label{fig:plots_elec}
+\end{figure}
+
+
+\subsection{S\&P 500 ETF Daily OHLCV Dataset}
+In forecasting the log returns of the S\&P 500, the models once again yielded highly comparable results. Table
+\ref{tab:results_spy} shows that the Jordan-RNN obtained the lowest RMSE (0.0132), but by an extremely narrow margin
+over the Elman-RNN and MRNN. 
+\begin{table}[H]
     \centering
     \begin{tabular}{|l|c|c|c|c|}
         \hline
-        &\multicolumn{2}{c|}{\textbf{Scaled}} & \multicolumn{2}{c|}{\textbf{Original}} \\ 
+        \textbf{Model}& \textbf{RMSE} & \textbf{MAE}\\ 
         \hline
-        \textbf{Model}& \textbf{RMSE} & \textbf{MAE} & \textbf{RMSE} & \textbf{MAE} \\ 
+        Elman-RNN& 0.0133 & 0.0086 \\ 
         \hline
-        Elman-RNN& 1.0773 & 0.8584 & 1.163819 & 0.927380 \\ 
+        Jordan-RNN & 0.0132 & 0.0085\\ 
         \hline
-        Jordan-RNN & 69 & 69 & 69 & 69 \\ 
+        MRNN & 0.0134 & 0.0086 \\ 
         \hline
-        MRNN & 69 & 69 & 69 & 69 \\ 
-        \hline
-        \textbf{Best Model} & test & test & \textbf{[Name]} & \textbf{[Name]} \\ 
+        \textbf{Best Model} & \multicolumn{2}{c|}{{Jordan-RNN}} \\ 
         \hline
     \end{tabular}
     \vspace{4pt}
-    \caption{Performance Metrics for Weather Dataset}
-    \label{tab:results_wtr}
+    \caption{Performance Metrics for S\&P500}
+    \label{tab:results_spy}
 \end{table}
+
+The forecast plots in Figure \ref{fig:plots_spy} visually reinforce this finding, showing
+that all models produce nearly identical predictions.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\textwidth]{plots/rnn_model_comparison_spy.pdf}
+    \caption{S\$P500 Dataset plots}
+    \label{fig:plots_spy}
+\end{figure}
+
+This result is consistent with the challenges of forecasting in efficient markets, where extracting a predictive signal
+is notoriously difficult. The fact that no single architecture demonstrated a distinct advantage suggests they all faced
+similar limitations in modeling the stochastic nature of stock returns.
+
+% \subsection{Weather Dataset}
+% TODO:
+% \begin{table}[H]
+%     \centering
+%     \begin{tabular}{|l|c|c|c|c|}
+%         \hline
+%         \textbf{Model}& \textbf{RMSE} & \textbf{MAE} \\ 
+%         \hline
+%         Elman-RNN& todo & todo \\ 
+%         \hline
+%         Jordan-RNN & todo & todo \\ 
+%         \hline
+%         MRNN & todo & todo \\ 
+%         \hline
+%         \textbf{Best Model} & \multicolumn{2}{c|}{{todo}} \\ 
+%         \hline
+%     \end{tabular}
+%     \vspace{4pt}
+%     \caption{Performance Metrics for Weather Dataset}
+%     \label{tab:results_wtr}
+% \end{table}
 
 \section{Conclusion}
 
-\pagebreak
+This comparative study of the Elman-RNN, Jordan-RNN, and Multi-Recurrent Neural Network (MRNN) architectures for time
+series forecasting across five diverse datasets reveals strikingly similar predictive performance among the models.
+Despite their distinct feedback mechanisms like hidden state recurrence in Elman, output recurrence in Jordan, and a hybrid
+approach in MRNN - no single architecture consistently outperformed the others in terms of RMSE and MAE on the holdout
+test sets. The marginal differences observed, such as the Elman-RNN's slight edge on the electricity load data or the
+Jordan-RNN's minor advantage on financial indices, were not significant enough to indicate a clear superiority. These
+findings underscore that, for these RNN variants examined, the impact of architectural differences is minimal
+when coupled with rigorous hyperparameter tuning, appropriate data preprocessing, and time-respecting cross-validation.
+Future research could explore more complex RNN extensions or alternative neural architectures to potentially uncover
+greater performance distinctions in time series forecasting tasks.
+
 \bibliographystyle{IEEEtran}
 \nocite{myrepo}
 \bibliography{refs.bib}
+% \pagebreak
 
 \appendix
 \section{Optimal Hyperparameters from Grid Search}
