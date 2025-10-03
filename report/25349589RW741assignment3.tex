@@ -26,14 +26,14 @@ Stellenbosch, South Africa \\
     ability to model sequential data. Foundational architectures such as the Elman-RNN and the Jordan-RNN offer distinct
     approaches to capturing temporal dependencies. This paper conducts a comparison of the Elman-RNN, Jordan-RNN, and a
     hybrid Multi-Recurrent Neural Network (MRNN) to determine if a superior architecture emerges for time series
-    forecasting in a given dataset. The evaluation is performed on five datasets with diverse characteristics: a
+    forecasting within a given dataset. The evaluation is performed on five datasets with diverse characteristics: a
     synthetic autoregressive series, S\&P 500 and VIX financial indices, an electricity load profile, and a multivariate
     weather series. For each model and dataset, a comprehensive hyperparameter search is conducted using a
     growing-window cross-validation strategy to ensure a fair comparison. The final performance, measured by Root Mean
     Squared Error (RMSE) and Mean Absolute Error (MAE) on a holdout test set, reveals that all three architectures
     achieve remarkably similar predictive accuracy. Despite their structural differences, no single model demonstrated a
     consistent or significant advantage across the varied forecasting tasks. This suggests that the specific choice
-    between these foundational RNN feedback mechanisms may be less critical to forecasting performance than robust
+    between these foundational RNN feedback mechanisms is less critical to forecasting performance than robust
     hyperparameter tuning and appropriate data preprocessing.
 \end{abstract}
 
@@ -83,8 +83,7 @@ The feedback mechanisms rely on information from the previous time step, where $
 $y_{t-1}$ is the network's output. The network's learnable parameters include the weight matrices and a bias vector.
 Specifically, $W_{xh}$ is the weight matrix connecting the input layer to the hidden layer, $W_{hh}$ is the recurrent
 weight matrix from the previous hidden state to the current hidden state, and $W_{yh}$ is the weight matrix from the
-previous output to the hidden state. The term $b_h$ represents the bias vector for the hidden layer. Finally, $\tanh$
-denotes the hyperbolic tangent activation function.
+previous output to the hidden state. Finally, $b_h$ represents the bias vector for the hidden layer.
 
 \textbf{Elman Recurrent Neural Network }
 
@@ -120,7 +119,7 @@ effective for forecasting tasks like price trends where past predictions inform 
 
 The multi-recurrent neural network (MRNN) integrates features of both Elman-RNN and Jordan-RNN. It includes input,
 hidden, context, and output layers. The context layer receives feedback from both previous hidden states and
-outputs and presented to the hidden layer at each time step. This hybrid architecture enhances memory by combining multiple
+outputs and presented to the hidden layer at each time step. This hybrid architecture aims to enhance memory by combining multiple
 recurrent paths. The MRNN hidden states are computed by the following equation: 
 
 $$h_t = \tanh(W_{xh}X_t + W_{hh}h_{t-1} + W_{yh}y_{t-1} + b_h)$$
@@ -128,9 +127,9 @@ $$h_t = \tanh(W_{xh}X_t + W_{hh}h_{t-1} + W_{yh}y_{t-1} + b_h)$$
 MRNN is apt for time series prediction as its dual feedback mechanisms provide an alternative way to capture complex
 temporal dependencies in sequential data compared to the previous two single-loop variants.
 
-While specific equations vary, MRNN extends Elman-RNN and Jordan-RNN formulations by incorporating both hidden and
-output feedbacks in the hidden state computation, such as combining terms from \( h(t-1) \) and \( y(t-1) \) in the
-activation.
+% While specific equations vary, MRNN extends Elman-RNN and Jordan-RNN formulations by incorporating both hidden and
+% output feedbacks in the hidden state computation, such as combining terms from \( h(t-1) \) and \( y(t-1) \) in the
+% activation.
 
 \textbf{Backpropagation Training Process} 
 
@@ -140,15 +139,17 @@ layered feedforward network where the weights are shared among the time-unfolded
 backpropagation techniques to calculate gradients \cite{quarkmlBackpropagationThrough}.
 
 The process starts with a forward pass through the network. For each time step $t$ in the sequence, the hidden state is
-calculated as \( h_t = \tanh(W_{xh} \cdot X_t + W_{hh} \cdot h_{t-1} + b_h) \), where \( X_t \) represents the input at
-that step, \( W_{xh} \) is the weight matrix from input to hidden, \( W_{hh} \) is the recurrent weight matrix from
-previous hidden to current hidden, and \( b_h \) is the hidden bias. Following this, the output at each time step is
+calculated \( h_t \).
+%  where \( X_t \) represents the input at
+% that step, \( W_{xh} \) is the weight matrix from input to hidden, \( W_{hh} \) is the recurrent weight matrix from
+% previous hidden to current hidden, and \( b_h \) is the hidden bias.
+Following this, the output at each time step is
 computed as \( y_t = \phi(W_{oh} \cdot h_t + b_o) \), with \( W_{oh} \) as the weight matrix from hidden to output, \(
-b_o \) as the output bias, tanh as the activation for the hidden layer, and \( \phi \) (such as sigmoid or softmax) for
+b_o \) as the output bias, $tanh$ as the activation for the hidden layer, and \( \phi \) (such as sigmoid or softmax) for
 the output layer \cite{quarkmlBackpropagationThrough}.
 
-Next, the loss is evaluated, often using mean squared error for regression tasks like time series prediction: \( L =
-\frac{1}{N} \sum_{t=1}^{N} (y - y_t)^2 \), where y is the target value and N is the number of time steps. The derivative
+Next, the loss is evaluated using mean squared error for regression tasks like time series prediction: \( L =
+\frac{1}{N} \sum_{t=1}^{N} (y - y_t)^2 \), where $y$ is the target value and $N$ is the number of time steps. The derivative
 of this loss with respect to the predicted output is \( \frac{\partial{L}}{\partial{y_t}} = \frac{2}{n}\sum_{t=t}^{n}(y
 - y_t) \) providing the starting point for error propagation.
 
@@ -194,9 +195,9 @@ relevant for evaluating RNN architectures due to its inherent non-stationarity, 
 non-linear dependencies, which provide a robust benchmark for comparing the ability of different models to learn
 patterns in time series data and predict next-step closing price. Preprocessing was necessary to ensure data quality and
 model stability. The 85 instances identified as outliers in the training data set ($\sigma >$ 3) were clamp-transformed
-to 3 standard deviations from the mean. The closing price, confirmed as non-stationary by Augmented Dickey-Fuller (ADF)
-and Kwiatkowski-Phillips-Schmidt-Shin (KPSS) tests, was stabilized by conversion to log returns
-\cite{StationarityTests}.\\
+to 3 standard deviations from the mean. Other than outliers the data exhibited no missing values or major
+irregularities. The closing price, confirmed as non-stationary by Augmented Dickey-Fuller (ADF) and
+Kwiatkowski-Phillips-Schmidt-Shin (KPSS) tests, was stabilized by conversion to log returns \cite{StationarityTests}.\\
 
 $log\_return_t = log(close_t / close_{t-1})$\\
 
@@ -209,10 +210,10 @@ and Close data for the period spanning 19 September 2005 to 19 September 2025. T
 testing RNNs because its structural properties. These structural properties include sudden spikes, and shifting
 sequential dependencies that create challenging non-stationary patterns. These characteristics differ significantly from
 the other datasets which make it an ideal candidate for diversifying training data. Data preparation involved several
-steps. First, 73 outliers in the training set exceeding 3 standard deviations were clamped. The non-stationarity of the
-closing price, verified with ADF and KPSS tests, was resolved by transforming the series' Close feature into log
-returns. Similar to the S\&P 500 data. Log returns was once again the only feature used for training the models in this
-dataset.
+steps. First, 73 outliers in the training set exceeding 3 standard deviations were clamped. Other than outliers the data
+exhibited no missing values or major irregularities. The non-stationarity of the closing price, verified with ADF and
+KPSS tests, was resolved by transforming the series' Close feature into log returns. Similar to the S\&P 500 data. Log
+returns was once again the only feature used for training the models in this dataset.
 
 The \textbf{ElectricityLoadDiagrams20112014} dataset contains high-frequency electricity consumption readings in
 kilowatts for 370 clients, recorded every 15 minutes from January 2011 to the end of 2014. For this assignment, a single
@@ -221,9 +222,9 @@ series forecasting scenario. This dataset was reduced to a size of 15000 measure
 observations. This was done to reduce model training and hyperparameter tuning time to be reasonable. This provides a
 high-granularity, cyclical test case for evaluating the predictive performance of the RNN models. The data required
 minimal cleaning as it contained no missing values. However, power consumption values in the training set exceeding 3
-standard deviations from the mean were clamp-transformed to handle outliers. Both ADF and KPSS tests confirmed that the
-series was non-stationary. To address this, a 24-hour seasonal differencing was applied, accounting for the inherent
-daily cyclicality of energy usage.
+standard deviations from the mean were clamp-transformed to handle outliers. Other than outliers the data exhibited no
+missing values or major irregularities. Both ADF and KPSS tests confirmed that the series was non-stationary. To address
+this, a 24-hour seasonal differencing was applied, accounting for the inherent daily cyclicality of energy usage.
 
 The \textbf{Synthetic Autoregressive Stationary (AR(1))} dataset was generated using Python code with the \texttt{NumPy}
 library, simulating a univariate time series from an AR(1) process defined by the equation $x_t = 0.5 x_{t-1} +
@@ -243,10 +244,9 @@ precipitation, pressure and cloud cover to name a few. This dataset was chosen f
 pronounced daily and seasonal cycles as well as multivariate interactions. Its inclusion enhances dataset diversity by
 introducing time series data with multiple cyclical tendencies and non-stationarity, contrasting the previously
 mentioned datasets. The data exhibited no missing values or major irregularities. Outliers exceeding 3 standard
-deviations were clamp-transformed. Highly correlated features with absolute correlation greater than 0.75 were dropped
-to reduce multicollinearity while preserving predictive power. The target feature is defined as the next hour's
-differenced temperature. Non-stationarity, confirmed by ADF and KPSS tests, was addressed through 24-hour seasonal
-differencing to account for daily periodicity.
+deviations were clamp-transformed. The target feature is defined as the next hour's differenced temperature and is the
+only feature used for training. The other features were disregarded. Non-stationarity, confirmed by ADF and KPSS tests,
+was addressed through 24-hour seasonal differencing to account for daily periodicity.
 
 \subsection{Recurrent Neural Networks Implemented}
 Elman, Jordan and MRNNs were implemented exactly as outlined in the background section. For each dataset the
@@ -309,14 +309,16 @@ For each dataset, a chronological data partitioning strategy was employed. The d
 training/validation set and a 30\% holdout test set. The holdout set was strictly used only for a single final evaluation
 of the optimized models to provide an unbiased assessment of generalization performance.
 
-Model performance was evaluated using Root Mean Squared Error (RMSE) and Mean Absolute Error (MAE). During the
-hyperparameter tuning phase, the mean RMSE across cross-validation folds served as the primary metric for hyperparameter
-selection. Final performance on the holdout set was reported in terms of RMSE on both the scaled data and the
-inverse-transformed, original scale of the data for better interpretability.
+Model performance was evaluated using RMSE and MAE. During the hyperparameter tuning phase, the mean RMSE across
+cross-validation folds served as the primary metric for hyperparameter selection. Final performance on the holdout set
+was reported in terms of RMSE on both the scaled data and the inverse-transformed, original scale of the data for better
+interpretability.
 
 \subsection{Hyperparameter Tuning}
 A comprehensive grid search coupled with a 5-fold growing-window cross-validation was performed to identify the optimal
-hyperparameters for each of the three RNN architectures on each dataset.
+optimal hyperparameter configurations for each of the three RNN architectures across all datasets. The growing-window
+cross-validation approach was selected for its straightforward implementation, despite acknowledged limitations such as
+the absence of a temporal gap between training and validation sets \cite{CrossValidationTimeseries}.
 
 The hyperparameter search space was defined as follows:
 
@@ -329,7 +331,7 @@ The hyperparameter search space was defined as follows:
 \end{itemize}
 
 Throughout all experiments, several architectural and training parameters were held constant to ensure a controlled
-comparison. These included the Adam optimizer, Mean Squared Error (MSE) loss function, a single recurrent layer, a batch
+comparison. These included the Adam optimizer, MSE loss function, a single recurrent layer, a batch
 size of 32, and a \texttt{tanh} hidden layer activation function. Training was conducted for a maximum of 100 epochs,
 with early stopping implemented to prevent overfitting.
 
@@ -354,16 +356,12 @@ conclusions.
 Results This section presents the empirical results obtained from evaluating the Elman, Jordan, and MRNN on the five
 selected time series datasets. The results are derived from the empirical procedure outlined in the previous section,
 utilizing the optimal hyperparameters identified via grid search and growing-window cross-validation. Performance is
-reported in terms of Root Mean Squared Error (RMSE) and Mean Absolute Error (MAE) on the 30\% holdout test set, computed
-both on the scaled data (for model-internal consistency) and the inverse-transformed original scale (for practical
-interpretability).
-
-For each dataset, the optimal hyperparameters are summarized, followed by a comparison of the three models. The
-best-performing model per dataset is highlighted based on the lowest holdout RMSE.
+reported in terms of RMSE and MAE on the 30\% holdout test set, computed both on the inverse-transformed original scale
+(for practical interpretability).
 
 \subsection{Synthetic Autoregressive Stationary Dataset}
 
-The synthetic AR(1) dataset served as a baseline to validate the models' ability to learn simple, linear temporal
+The synthetic autoregressive dataset served as a baseline to validate the models' ability to learn simple, linear temporal
 dependencies. As shown in Table \ref{tab:results_ar1}, all three architectures performed exceptionally well, achieving
 nearly identical results on the holdout set. The Elman-RNN yielded a marginally lower RMSE of 1.1253, followed closely
 by the Jordan-RNN and MRNN with RMSEs of 1.1254.
@@ -389,11 +387,11 @@ by the Jordan-RNN and MRNN with RMSEs of 1.1254.
 \end{table}
 
 This performance is notable because the theoretical limit for the RMSE on this dataset is 1.0, corresponding to the
-standard deviation of the white noise component ($\epsilon_t$) in the AR(1) process. An RMSE approaching this value
-indicates that the models successfully captured the autoregressive signal, with the remaining error being almost
-entirely due to the inherent randomness of the data. Therefore, the strong performance of these simple RNN
-models confirms their capability to learn the fundamental patterns present in a stationary autoregressive time series,
-establishing their suitability for tackling more complex forecasting problems.
+standard deviation of the white noise component ($\epsilon_t$) in the autoregressive process. An RMSE approaching this
+value indicates that the models successfully captured the autoregressive signal, with the remaining error being due to
+the inherent randomness of the data. Therefore, the strong performance of these simple RNN models confirms their
+capability to learn the fundamental patterns present in a stationary autoregressive time series, establishing their
+suitability for tackling more complex forecasting problems.
 
 \subsection{CBOE VIX Daily OHLC Dataset}
 For the CBOE VIX dataset, characterized by its high volatility and non-stationarity, all three models again demonstrated
@@ -553,9 +551,7 @@ greater performance distinctions in time series forecasting tasks.
 % \pagebreak
 
 \appendix
-\section{Optimal Hyperparameters from Grid Search}
 \include{params}
-
 
 
 
